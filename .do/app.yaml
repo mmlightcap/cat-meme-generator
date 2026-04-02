@@ -1,0 +1,29 @@
+name: slow-sourcing
+region: nyc
+services:
+  - name: web
+    github:
+      repo: mmlightcap/slow-sourcing
+      branch: main
+      deploy_on_push: true
+    build_command: npm install && npm run build
+    run_command: npm start
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: AUTH_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: PARALLEL_API_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NEXTAUTH_URL
+        scope: RUN_AND_BUILD_TIME
+        value: "https://placeholder.ondigitalocean.app"
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: "production"

@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -21,8 +20,13 @@ model User {
   image         String?
   password      String?
 
-  accounts Account[]
-  sessions Session[]
+  accounts         Account[]
+  sessions         Session[]
+  creators         Creator[]
+  searchRuns       SearchRun[]
+  monitoredQueries MonitoredQuery[]
+  articleLeads     ArticleLead[]
+  bigRuns          BigRun[]
 
   @@map("users")
 }
@@ -69,3 +73,92 @@ model VerificationToken {
 // Your app tables — add your own models below
 // After editing, run: npm run db:push
 // ═══════════════════════════════════════════════════════════════
+
+model Creator {
+  id            String   @id @default(cuid())
+  name          String
+  bio           String?
+  category      String?  // e.g., "food", "fashion", "tech", "fitness"
+  socialHandles Json?    // { instagram: "...", tiktok: "...", youtube: "..." }
+  businessName  String?
+  businessDesc  String?
+  articleUrl    String?
+  articleTitle  String?
+  publication   String?  // e.g., "Food52", "local newspaper", "Forbes"
+  audienceSize  String?  // e.g., "10K-50K", "100K-500K", "1M+"
+  stage         String   @default("sourced") // sourced, contacted, meeting, passed, invested
+  notes         String?
+  score         Int?     // 1-10 entrepreneurial signal score
+  searchQuery   String?  // what search query found this creator
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("creators")
+}
+
+model SearchRun {
+  id        String   @id @default(cuid())
+  query     String
+  status    String   @default("running") // running, completed, failed
+  results   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("search_runs")
+}
+
+model MonitoredQuery {
+  id        String   @id @default(cuid())
+  query     String
+  active    Boolean  @default(true)
+  lastRunAt DateTime?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("monitored_queries")
+}
+
+model ArticleLead {
+  id               String   @id @default(cuid())
+  creatorName      String
+  bio              String?
+  category         String?
+  businessName     String?
+  businessDesc     String?
+  articleUrl       String   @unique // deduplicate by URL
+  articleTitle     String?
+  publication      String?
+  audienceSize     String?
+  socialHandles    Json?
+  articleDate      String?  // date the article was published (as reported by Parallel)
+  searchQuery      String?  // which monitored query found this
+  addedAt          DateTime @default(now()) // when we added it to the feed
+  promoted         Boolean  @default(false) // whether it's been promoted to the Creator pipeline
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("article_leads")
+}
+
+model BigRun {
+  id            String    @id @default(cuid())
+  findallId     String    // the Parallel.ai findall_id
+  status        String    @default("running") // running, completed, failed
+  matchedCount  Int       @default(0)
+  importedCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("big_runs")
+}
